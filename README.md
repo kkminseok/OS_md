@@ -1,5 +1,3 @@
-# OS복습
-
 ## 1. 운영체제 ?
 
 ### 1. 운영체제의 목적
@@ -300,3 +298,104 @@ int main(){
 - Belody's anomaly : 프레임 수가 증가하면(메모리가 커지면) page fault 수가 줄어들어야 정상이지만 오히려 커지는 현상.
 - OPT(optimal) : 가장 오래동안 사용되지 않을 페이지를 교체하는 방식이지만 현실적으로 불가능.
 - LRU(Least- Recently - Used) : 최근에 사용되지 않으면 나중에도 사용되지 않을 것을 교체 (대부분 LRU사용.
+
+---
+
+## 17. 프레임 할당
+
+Global Replacement vs Local Replacement : Global은 메모리상의 모든 프로세스에 대해 교체, Local은 메모리상의 자기 자신의 프로세스에 대해 교체 / 일반적으로 Global이 메모리 사용 효율성이 좋음.
+
+**프레임 할당**
+
+- 쓰레싱(Thrashing)
+    - 메모리에 올라가는 프로세스가 많을수록 CPU사용률이 올라가야한다고 생각하지만 일정 범위를 넘어가면 그와 반대로 오히려 사용률이 내려가는 현상.
+    - 메모리와 Back Store 사이에서 I/O 작업이 일어나는데, 이는 CPU를 사용하지 않으므로 프로세스가 반복되면 위의 작업이 계속 반복됨. → CPU가 사용되지 않는 경우가 생김.
+    - 해결 방법은 2가지
+    - 1. Global 대신 Local Replacement를 쓴다. → 메모리 사용 효율성이 낮아짐.
+    - 2. 프로세스당 충분한적절한 프레임을 할당.
+        - 이 또한 2가지 할당 방법이 있다.
+        1. 정적 할당(Static Allocation) : 동일 할당 : 모든 프로세스에 똑같이 할당, 프로세스의 크기가 전부 다르므로 **비효율적** / 비례 할당 : 프로세스의 크기에 따라 할당. 프로세스의 크기가 크더라도 전부 사용하지 않으므로 **비효율적**
+        2. 동적 할당(Dynamic Allcation) : 실행중에 프레임 할당. 특정 시간대에는 일정 범위의 페이지를 주로 참조한다는 점을 이용. 프로세스를 미리 실행해봐야 안다는 단점 때문에 나온 것이 **Working set**방식 - 미래가 아닌 과거를 봄
+- PFF(Page - Fault - Frequency) : 상한선(upper bound)와 하한선(lower bound)를 설정하여, 상한선보다 많은 페이지 부재가 발생하면 프레임 할당을 많이해주고, 하한선보다 적은 페이지 부재가 발생하면 프레임 할당을 줄여줌.
+
+- 페이지 크기에 따른 성능
+    1. 내부 단편화 : 내부 단편화를 줄이려면 페이지 크기는 작은 것이 좋다.
+    2. Page-in, Page-out 시간 : 페이지 크기가 크면 클수록 한 번의 Seektime마다 많은 페이지를 읽을 수 있으므로, 페이지 부재 빈도가 줄어듦.
+    3. 페이지 테이블 크기 : 페이지 크기가 클수록 페이지의 개수는 줄어드므로, 그만큼 페이지 테이블도 줄일 수 있다.
+    4. Memeory resolution(해상도) : 메모리에 필요한 데이터가 있을 확률. 페이지 크기가 작을수록 높다. 페이지 크기가 크면 다른 필요없는 부분이 있을 확률이 크기 때문.
+    5. Page Fault 발생확률 : 발생확률을 줄이려면 페이지의 크기가 큰 것이 좋다. 대부분 프로세스는 일정 범위 이내인 경우가 많으므로 페이지 크기가 크면 필요한 부분이 있을 확률이 높다.
+
+---
+
+## 18. 파일 할당
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/734dcb5c-fd5f-49e8-979d-d10b35a3478b/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/734dcb5c-fd5f-49e8-979d-d10b35a3478b/Untitled.png)
+
+- **platter**: 실제 데이터를 기록하는 자성을 가진 원판이다. platter는 그림과 같이 여러 개가 존재하고 앞뒤로 사용할 수 있다. 한 platter는 여러 개의 track으로 이루어져 있다.
+- **track**: platter의 동심원을 이루는 하나의 영역이다.
+- **sector**: 하나의 track을 여러 개로 나눈 영역을 sector라 한다. sector size는 일반적으로 512 bytes이며 주로 여러 개를 묶어서 사용한다.
+- **cylinder**: 한 cylinder는 모든 platter에서 같은 track 위치의 집합을 말한다
+
+앞서 sector는 여러 개로 묶어서 사용한다고 했는데, 이를 블록(block)이라 한다. 하드디스크는 블록 단위로 읽고 쓰기 때문에 block device 라고 불리기도 한다.
+
+따라서 디스크는 비어있는 블록들의 집합이라고 볼 수 있다.(pool of free blocks) 그렇다면 운영체제는 각각의 파일에 대해 free block을 어떻게 할당할까?
+
+**파일 할당**
+
+1. 연속 할당(Contiguous Allocation) :
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/9ccdc2e2-97c1-466d-b915-054d05448b82/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/9ccdc2e2-97c1-466d-b915-054d05448b82/Untitled.png)
+
+장점 : 디스크 헤더의 이동 최소화 → I/O 성능을 높일 수 있다, 순차접근, 직접접근 가능.
+
+단점 : 파일을 할당하고 지우고를 반복하다보면 중간 중간에 빈 공간(hole)이 생기는데 연속 할당은 연속된 공간을 찾아야 하기 때문에 이전 메인 메모리 할당에서 살펴본 것과 같이 외부 단편화 문제가 발생한다., 또 다른 문제는 파일을 저장할 때 실제 크기를 알 수 없다. 특히, 계속해서 사용하는 파일의 경우 크기가 계속 증가 할 수 있기 때문에 이를 지속해서 연속적으로 할당하기에는 매우 부적절하다.
+
+2. 연결 할당(Linked Allocation) : 
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2bf0e7b9-64a2-4a7e-8287-89cd6b5fea5b/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2bf0e7b9-64a2-4a7e-8287-89cd6b5fea5b/Untitled.png)
+
+장점 : 파일이 커져도 블록을 연결만 해주면 되므로 외부 단편화가 없다.
+
+단점 : 순차 접근은 가능하지만, 직접 접근은 불가능. 포인터를 저장하는 4byte이상의 손해 발생. 낮은 신뢰성(링크가 도중에 끊어버리는 경우), 낮은 속도(포인터를 계속 옮기면서 읽는 과정)
+
+3. FAT(File Allocation Table) : 연결 할당의 단점 보완.
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/664b5368-a742-4b83-814b-4d11cfcccc35/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/664b5368-a742-4b83-814b-4d11cfcccc35/Untitled.png)
+
+FAT 시스템은 다음 블록을 가리키는 포인터들만 모아서 하나의 테이블(FAT)을 만들어 한 블록에 저장한다.
+
+FAT 시스템을 사용하면 기존의 연결 할당의 문제점 대부분을 해결할 수 있다. FAT를 한 번만 읽으면 직접 접근이 가능하고, FAT만 문제가 없다면 중간 블록에 문제가 생겨도 FAT를 통해 그 다음 블록은 여전히 읽을 수 있다. 그리고 FAT는 일반적으로 메모리 캐싱을 사용하여 블록 위치를 찾는데는 빠르지만 실제 디스크 헤더가 움직는 것은 블록이 흩어져 있으므로 여전히 느리다고 볼 수 있다. 마지막으로 FAT는 매우 중요한 정보이므로 손실 시 복구를 위해 이중 저장을 한다.
+
+4. 색인 할당(indexd Allocation)
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/20cce343-5627-41cc-8769-2b49539bc885/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/20cce343-5627-41cc-8769-2b49539bc885/Untitled.png)
+
+색인 할당은 인덱스 블록에 할당된 블록을 순서대로 저장하기 때문에 직접 접근이 가능하다. 그리고 연속적으로 할당할 필요가 없으므로 외부 단편화 문제 또한 발생하지 않는다. 색인 할당은 Unix/Linux에서 주로 사용한다.
+
+색인 할당의 단점은 작은 크기의 파일인 경우에도 하나의 블록을 인덱스 블록으로 사용하기 때문에 저장 공간이 손실된다. 그리고 **하나의 인덱스 블록을 가지고는 크기가 큰 파일을 저장할 수 없다.**
+
+이를 해결하기 위해 Linked, Multilevel index, 둘을 합친 Combined 방식이 있다. 리눅스는 Combined방식.
+
+---
+
+## 19. 디스크 스케쥴링
+
+디스크에 접근하는 시간은 Seek time(탐색 시간) + rotational delay + transfer time 으로 계산할 수 있는데, 이 중에서 seek time(head를 움직이는 시간)이 가장 크다.
+
+디스크 탐색 시간을 줄이기 위한 방법들을 디스크 스케쥴링이라고 한다.
+
+1. FCFS(first Come First Served) : 가장 공평하고 간단한 방법.
+2. SSTF(Shortest Seek Time First) : 현재 헤더가 다음 요청을 처리하기 위해 움직여야하는 거리가 가장 짧은 것을 선택. - 최적의 알고리즘 아니다.
+3. Scan(헤드가 지속적으로 디스크를 앞뒤로 검사)
+
+    3. 1 C-Scan : 한 방향으로만 움직이는 것이 마치 원형과 같다. 움직이는 거리는 더 길어질 수 있지만, 처음 위치로 되돌아갈 때에는 데이터를 읽지 않으므로 더 빠른 속도로 이동가능
+
+    3. 2 Look : Scan알고리즘은 한 방향으로 가기에 0번째 실린더까지 이동하는 데 이는 불필요한 이동이다. 최소 범위와 최대 범위를 지정하여 Scan하는 방식을 Look.
+
+    참고 :  scan예제
+
+    ![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/267f123e-3685-49eb-91d3-6d0d59b48248/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/267f123e-3685-49eb-91d3-6d0d59b48248/Untitled.png)
+
+    3. 3C-Look : Look에서 Circular를 추가한 것으로 위의 Look의 최소, 최대 범위에서 한 방향으로만 이동한다.
+
+---
